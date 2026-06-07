@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block style %}
+    h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+    .lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 2.5rem; }
+    .flow { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 2.5rem; padding: 0; list-style: none; }
+    .flow li {
+      background: #fff; border: 1px solid var(--line); border-radius: 999px;
+      padding: 0.35rem 0.9rem; font-size: 0.9rem; color: var(--muted);
+    }
+    .principle {
+      background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--accent);
+      border-radius: 6px; padding: 1rem 1.25rem; margin: 0 0 1rem;
+    }
+    .principle strong { color: var(--ink); }
+    .principle p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; }
+{% endblock %}
+
+{% block content %}
+  <h1>Spec Compliance Checker</h1>
+  <p class="lede">
+    Upload a process spec and a production record; it extracts each requirement
+    (cited), checks the record against it, and produces an audit-ready report —
+    deliberately biased toward <em>catching the miss</em>.
+  </p>
+
+  <ul class="flow">
+    <li>Upload</li>
+    <li>→ Requirements</li>
+    <li>→ Results</li>
+    <li>→ Report</li>
+  </ul>
+
+  <div class="principle">
+    <strong>The LLM extracts and cites; deterministic code decides; a human signs.</strong>
+    <p>A model never does arithmetic on safety-relevant numbers.</p>
+  </div>
+  <div class="principle">
+    <strong>Three-state verdict: Compliant / Non-compliant / Insufficient evidence.</strong>
+    <p>A missing field is never &ldquo;compliant.&rdquo;</p>
+  </div>
+
+  <p style="color: var(--muted); font-size: 0.9rem;">
+    Scaffold (milestone&nbsp;M0). The interactive flow lands in milestones M5–M7.
+  </p>
+{% endblock %}
