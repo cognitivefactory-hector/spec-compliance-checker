@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spec-compliance-checker"
+version = "0.1.0"
+description = "Extract cited requirements from a process spec, check a production record against them, and produce an audit-ready report — biased toward catching the miss."
+requires-python = ">=3.11"
+dependencies = [
+    "django>=5.1,<6.0",
+    "python-dotenv>=1.0",
+    "gunicorn>=22.0",
+    "whitenoise>=6.6",
+]
+
+# Runtime deps are added at the milestone that first needs them:
+#   M2 ingest  -> pdfplumber / pypdf
+#   M3 extract -> anthropic
+# Keeping them out until used keeps the image lean and the build sequence honest.
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-django>=4.8",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "app*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]

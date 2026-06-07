@@ -20,10 +20,26 @@ Part of [hector-garza.com](https://hector-garza.com)'s portfolio. One of three e
 - **Frontend:** Django templates + HTMX
 - **Packaging:** Docker · **Quality:** pytest + ruff + GitHub Actions CI
 
+## Run locally
+With Docker (one command):
+```bash
+docker build -t scc . && docker run --rm -p 8000:8000 -e DJANGO_SECRET_KEY=dev scc
+# → http://localhost:8000
+```
+
+Or with a virtualenv:
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -e ".[dev]"
+cp .env.example .env          # then edit as needed
+python manage.py runserver    # → http://localhost:8000
+pytest                        # run the tests
+ruff check .                  # lint
+```
+
 ## Deployment
 - **Live demo:** Dockerized Django app on **Render**, fronted by **Cloudflare** (planned subdomain `compliance.hector-garza.com`).
 - `ANTHROPIC_API_KEY` lives in `.env` (gitignored) / host secrets — **never committed.**
-- Local run: one command via Docker (added in build step M0).
 
 ## Links (filled in as the build progresses)
 - 🔗 Live demo: _TBD_

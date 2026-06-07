@@ -25,7 +25,14 @@ Audit prep drops from hours to minutes; every requirement is checked **consisten
 ---
 
 ## Engineering decisions (recorded as built)
-- **Backend:** Django — one stack across the portfolio.
+- **Backend:** Django — one stack across the portfolio. **Django 5.2 LTS** on **Python 3.12**.
 - **Split:** LLM confined to **understanding** (typed, cited requirement extraction); **deterministic code** evaluates everything quantifiable. The model returns citations, not verdicts.
 - **Tested invariant:** a missing record field yields "Insufficient evidence," never "compliant"; uncertainty never resolves to pass.
 - **Host:** Render (Dockerized) behind Cloudflare. `ANTHROPIC_API_KEY` never committed.
+
+### M0 — scaffold (recorded as built)
+- **Model choice:** default **`claude-sonnet-4-6`**, switchable to `claude-opus-4-8` via the `ANTHROPIC_MODEL` env var. Reasoning: extraction is **one call per spec** over short, structured documents, and the model's job is the *narrow, verifiable* task of typed extraction with verbatim citations — not open-ended reasoning. Sonnet is the cost/quality fit; the human review gate plus deterministic verdicts mean we don't need the top tier to be safe. Opus stays one env var away if extraction recall on harder specs warrants it. (Revisit with real numbers at M3/M5.)
+- **Project layout:** Django project in `config/` (settings/urls/wsgi/asgi); single app in `app/` that will hold the pipeline packages (`ingest/`, `extract/`, `check/`, `report/`, `data/`) added at their milestones. Settings are env-driven (`config/settings.py` + `.env.example`) so one image runs locally and on Render.
+- **Dependency management:** `pyproject.toml` (single source of truth for deps + `ruff` + `pytest` config). Runtime deps are added at the milestone that first needs them (`pdfplumber`/`pypdf` at M2, `anthropic` at M3) to keep the image lean and the build sequence honest.
+- **Deploy runtime:** `gunicorn` + `whitenoise` (static without a separate web server), `python:3.12-slim` base image, binds `$PORT` for Render. A `/healthz` JSON probe is exposed for uptime checks.
+- **DB:** SQLite configured but the demo needs no DB (session/in-memory); kept so reports can optionally be persisted later (SPEC §9).
