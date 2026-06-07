@@ -40,3 +40,8 @@ select = ["E", "F", "I", "UP", "B", "DJ"]
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py"]
 testpaths = ["tests"]
+filterwarnings = [
+    # WhiteNoise warns that STATIC_ROOT is absent during tests; it's only
+    # collected in the Docker build, so this is benign in the test env.
+    "ignore:No directory at:UserWarning",
+]

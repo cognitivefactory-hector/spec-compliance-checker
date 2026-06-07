@@ -36,3 +36,12 @@ Audit prep drops from hours to minutes; every requirement is checked **consisten
 - **Dependency management:** `pyproject.toml` (single source of truth for deps + `ruff` + `pytest` config). Runtime deps are added at the milestone that first needs them (`pdfplumber`/`pypdf` at M2, `anthropic` at M3) to keep the image lean and the build sequence honest.
 - **Deploy runtime:** `gunicorn` + `whitenoise` (static without a separate web server), `python:3.12-slim` base image, binds `$PORT` for Render. A `/healthz` JSON probe is exposed for uptime checks.
 - **DB:** SQLite configured but the demo needs no DB (session/in-memory); kept so reports can optionally be persisted later (SPEC §9).
+
+### M1 — requirement model + deterministic verdicts (recorded as built)
+- **Evidence model:** the LLM extracts cited candidate values **from the record** too (same extract-and-cite discipline as spec requirements); **deterministic code does the comparison and the verdict.** This preserves "the model understands, the code decides." `check/` defines the `Observation` shape and pure evaluators in M1; the record-extraction wiring lands in M3/M5.
+- **Verdict states:** exactly three — `COMPLIANT` / `NON_COMPLIANT` / `INSUFFICIENT_EVIDENCE`. A conditional whose condition isn't triggered resolves to `COMPLIANT` (with reason "condition not met"), not a fourth state.
+- **The encoded asymmetry (tested invariant):** any missing or unparseable observation value defaults to `INSUFFICIENT_EVIDENCE`, **never `COMPLIANT`**. Uncertainty never resolves to pass.
+- **Units:** numeric units must match between requirement and observation. A unit mismatch or a missing unit → `INSUFFICIENT_EVIDENCE` — **no silent conversion**, because a conversion bug is exactly the false negative we guard against.
+- **Presence is special:** for a `presence` requirement (a field that *must* be recorded), an **absent field → `NON_COMPLIANT`** (the requirement is "be present"; absence is a definite failure). This differs from numeric/temporal/categorical, where a missing value → `INSUFFICIENT_EVIDENCE`. An unparseable record → `INSUFFICIENT_EVIDENCE`.
+- **Conditional:** modeled as a condition + a consequent requirement. Condition data missing → `INSUFFICIENT_EVIDENCE`; condition false → `COMPLIANT` (not triggered); condition true → evaluate the consequent.
+- **Pure functions:** `check/verdict.py` evaluators are pure `(requirement, observation) -> Verdict` with no I/O, so they are trivially testable and reproducible (the auditability argument).
