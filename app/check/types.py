@@ -27,7 +27,7 @@ class Citation:
     but it drives the human review gate (M5)."""
 
     source_text: str
-    source_location: str
+    source_location: str | None  # None when a verbatim quote couldn't be located
     confidence: float = 1.0
 
 
