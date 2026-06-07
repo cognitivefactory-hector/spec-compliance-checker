@@ -14,11 +14,13 @@ dependencies = [
     "whitenoise>=6.6",
     "pdfplumber>=0.11",
     "pypdf>=4.0",
+    "anthropic>=0.69",
+    "pydantic>=2.0",
 ]
 
 # Runtime deps are added at the milestone that first needs them:
 #   M2 ingest  -> pdfplumber / pypdf   (added)
-#   M3 extract -> anthropic
+#   M3 extract -> anthropic + pydantic (added)
 # Keeping them out until used keeps the image lean and the build sequence honest.
 
 [project.optional-dependencies]
