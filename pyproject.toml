@@ -12,10 +12,12 @@ dependencies = [
     "python-dotenv>=1.0",
     "gunicorn>=22.0",
     "whitenoise>=6.6",
+    "pdfplumber>=0.11",
+    "pypdf>=4.0",
 ]
 
 # Runtime deps are added at the milestone that first needs them:
-#   M2 ingest  -> pdfplumber / pypdf
+#   M2 ingest  -> pdfplumber / pypdf   (added)
 #   M3 extract -> anthropic
 # Keeping them out until used keeps the image lean and the build sequence honest.
 
@@ -24,6 +26,7 @@ dev = [
     "pytest>=8.0",
     "pytest-django>=4.8",
     "ruff>=0.6",
+    "reportlab>=4.0",  # builds typed-PDF fixtures for ingest tests
 ]
 
 [tool.setuptools.packages.find]
