@@ -330,40 +330,17 @@ def get_sample(sample_id: str) -> Sample:
 # --- offline pipeline run (no API) -------------------------------------------
 
 
-class _OfflineMessages:
-    """Returns the sample's canned extraction in place of a Claude call."""
-
-    def __init__(self, spec: ExtractionResult, record: RecordExtraction):
-        self._spec = spec
-        self._record = record
-
-    def parse(self, *, output_format, **_kwargs):
-        payload = self._spec if output_format is ExtractionResult else self._record
-
-        @dataclass(frozen=True)
-        class _Resp:
-            parsed_output: object
-
-        return _Resp(payload)
-
-
-class _OfflineClient:
-    def __init__(self, spec: ExtractionResult, record: RecordExtraction):
-        self.messages = _OfflineMessages(spec, record)
-
-
 def run_sample(sample_id: str, *, min_confidence: float | None = None):
-    """Run the real check pipeline for a sample with canned LLM output — a
-    reproducible, zero-cost demo path that still exercises ingest -> extract ->
-    review -> check end to end."""
-    from app.pipeline import DEFAULT_MIN_CONFIDENCE, check_documents
+    """Build the report for a sample from its canned extractions — a reproducible,
+    zero-cost demo path that still exercises the real deterministic pipeline
+    (parse -> map + locate -> review gate -> check)."""
+    from app.pipeline import DEFAULT_MIN_CONFIDENCE, build_report_from_extractions
 
     sample = get_sample(sample_id)
-    client = _OfflineClient(sample.extraction, sample.record_extraction)
-    return check_documents(
+    return build_report_from_extractions(
         sample.spec_text,
         sample.record_text,
-        client=client,
-        model="offline",
+        sample.extraction,
+        sample.record_extraction,
         min_confidence=DEFAULT_MIN_CONFIDENCE if min_confidence is None else min_confidence,
     )

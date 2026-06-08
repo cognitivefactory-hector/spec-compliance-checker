@@ -20,7 +20,12 @@ from app.data.corpus import SPEC_EXTRACTION, SPEC_TEXT, get_sample
 from app.extract.observations import ExtractedObservation, RecordExtraction, to_observations
 from app.extract.schemas import ExtractionResult
 from app.ingest.parse import parse_text
-from app.pipeline import build_report, check_documents, review_requirements
+from app.pipeline import (
+    build_report,
+    build_report_from_extractions,
+    check_documents,
+    review_requirements,
+)
 
 
 def _req(confidence: float, location: str | None = "p.1 L1") -> NumericRequirement:
@@ -217,3 +222,11 @@ def test_check_documents_end_to_end_catches_the_subtle_noncompliance():
     )
     assert [r.status for r in report.results] == [c.expected for c in sample.checks]
     assert report.count(VerdictStatus.NON_COMPLIANT) == 1  # the temporal catch
+
+
+def test_build_report_from_extractions_rebuilds_without_the_llm():
+    sample = get_sample("coating-subtle")
+    report = build_report_from_extractions(
+        sample.spec_text, sample.record_text, sample.extraction, sample.record_extraction
+    )
+    assert [r.status for r in report.results] == [c.expected for c in sample.checks]

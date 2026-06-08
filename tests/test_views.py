@@ -7,6 +7,8 @@ insufficient evidence), and that sign-off/override/export behave.
 
 from django.urls import reverse
 
+from app.data.corpus import get_sample
+
 
 def test_landing_lists_samples_and_carries_disclaimer(client):
     body = client.get(reverse("index")).content.decode()
@@ -78,3 +80,64 @@ def test_markdown_export_downloads_a_file(client):
     assert resp["Content-Type"].startswith("text/markdown")
     assert "attachment" in resp["Content-Disposition"]
     assert "not a quality system of record" in resp.content.decode()
+
+
+def test_pdf_export_downloads_a_pdf(client):
+    resp = client.post(
+        reverse("report", args=["coating-clean"]),
+        {"approver": "H. Garza", "export": "pdf"},
+    )
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content.startswith(b"%PDF")
+
+
+# --- upload flow -------------------------------------------------------------
+
+
+def test_landing_upload_is_disabled_without_an_api_key(client):
+    # tests run with no ANTHROPIC_API_KEY set
+    body = client.get(reverse("index")).content.decode()
+    assert "ANTHROPIC_API_KEY" in body
+
+
+def test_analyze_requires_both_files(client):
+    resp = client.post(reverse("analyze"), {})
+    assert resp.status_code == 400
+    assert "both" in resp.content.decode().lower()
+
+
+def _carry_payload(sample_id):
+    sample = get_sample(sample_id)
+    return {
+        "spec_text": sample.spec_text,
+        "record_text": sample.record_text,
+        "extraction": sample.extraction.model_dump_json(),
+        "record_extraction": sample.record_extraction.model_dump_json(),
+    }
+
+
+def test_analyze_report_signs_an_uploaded_analysis_round_trip(client):
+    """The sign-off round-trip rebuilds the report from carried extractions — no LLM."""
+    payload = _carry_payload("coating-subtle")
+    payload["approver"] = "H. Garza"
+    resp = client.post(reverse("analyze_report"), payload)
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "H. Garza" in body
+    assert "Audit trail" in body
+
+
+def test_analyze_report_pdf_export_round_trip(client):
+    payload = _carry_payload("coating-clean")
+    payload["approver"] = "H. Garza"
+    payload["export"] = "pdf"
+    resp = client.post(reverse("analyze_report"), payload)
+    assert resp.status_code == 200
+    assert resp["Content-Type"] == "application/pdf"
+    assert resp.content.startswith(b"%PDF")
+
+
+def test_analyze_report_requires_an_approver(client):
+    resp = client.post(reverse("analyze_report"), _carry_payload("coating-clean"))
+    assert resp.status_code == 400

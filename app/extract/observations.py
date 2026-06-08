@@ -48,14 +48,14 @@ class RecordExtraction(BaseModel):
     observations: list[ExtractedObservation]
 
 
-def extract_observations(
+def extract_observations_result(
     record: ParsedDocument,
     requirements: list[Requirement],
     *,
     client=None,
     model: str | None = None,
-) -> list:
-    """Find cited observations in the record for each requirement via Claude."""
+) -> RecordExtraction:
+    """The raw structured record extraction from Claude (before mapping)."""
     if client is None or model is None:
         client, model = _resolve_client_and_model(client, model)
 
@@ -70,7 +70,19 @@ def extract_observations(
         ],
         output_format=RecordExtraction,
     )
-    return to_observations(response.parsed_output, requirements, record)
+    return response.parsed_output
+
+
+def extract_observations(
+    record: ParsedDocument,
+    requirements: list[Requirement],
+    *,
+    client=None,
+    model: str | None = None,
+) -> list:
+    """Find cited observations in the record for each requirement via Claude."""
+    result = extract_observations_result(record, requirements, client=client, model=model)
+    return to_observations(result, requirements, record)
 
 
 def to_observations(

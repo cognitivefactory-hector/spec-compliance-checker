@@ -13,7 +13,7 @@ import pytest
 from app.check.types import VerdictStatus
 from app.data.corpus import get_sample
 from app.pipeline import build_report
-from app.report.render import render_markdown
+from app.report.render import render_markdown, render_pdf
 from app.report.sign_off import CONFIRM, OVERRIDE, Decision, sign_off
 
 SIGNED_AT = datetime(2026, 6, 7, 14, 30)
@@ -141,3 +141,11 @@ def test_markdown_report_summarizes_counts():
     assert "Summary" in md
     # after the override, the subtle sample's one non-compliant clause is cleared
     assert signed.count(VerdictStatus.NON_COMPLIANT) == 0
+
+
+def test_pdf_export_returns_a_pdf_document():
+    _, signed = _signed_with_override()
+    pdf = render_pdf(signed)
+    assert isinstance(pdf, bytes)
+    assert pdf.startswith(b"%PDF")
+    assert len(pdf) > 1000  # a real, non-trivial document
