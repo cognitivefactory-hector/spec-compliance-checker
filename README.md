@@ -57,7 +57,7 @@ ruff check .                  # lint
 The four **sample** documents run the full pipeline **offline** (canned model output) — no API key needed. To analyze your **own** uploaded spec + record, set `ANTHROPIC_API_KEY` (see below); that enables the live extraction path.
 
 ## Deployment
-Dockerized Django on **Render**, fronted by **Cloudflare** (planned subdomain `compliance.hector-garza.com`).
+Live at **[compliance.hector-garza.com](https://compliance.hector-garza.com/)** — Dockerized Django on **Render**, fronted by **Cloudflare**.
 
 1. Push to GitHub, then in Render: **New → Blueprint** and point it at this repo. [`render.yaml`](./render.yaml) provisions a Docker web service with `/healthz` health checks and the right env vars.
 2. Set **`ANTHROPIC_API_KEY`** as a secret in the Render dashboard (`render.yaml` marks it `sync: false` so it's never committed).
@@ -66,7 +66,7 @@ Dockerized Django on **Render**, fronted by **Cloudflare** (planned subdomain `c
 Key env vars (see [`.env.example`](./.env.example)): `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`. **`ANTHROPIC_API_KEY` is never committed** (`.env` is gitignored; the host holds the secret). Cost guard: one extraction call per spec + one per record, prompt-cached, with a token cap.
 
 ## Links
-- 🔗 Live demo: _TBD (deploy via `render.yaml`)_
+- 🔗 Live demo: **[compliance.hector-garza.com](https://compliance.hector-garza.com/)**
 - 🧠 Decision record: [`DECISIONS.md`](./DECISIONS.md)
 - 🎥 Whiteboard walkthrough: _TBD (M9)_
 
