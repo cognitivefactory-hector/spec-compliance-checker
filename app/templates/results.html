@@ -1,31 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Results — {{ sample.spec_id }}{% endblock %}
+{% block title %}Results{% endblock %}
 
 {% block style %}
   .clause .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
   .evidence { margin: 0.5rem 0 0; padding-left: 1rem; }
   .reason { color: var(--muted); font-size: 0.88rem; margin: 0.35rem 0 0; }
   .disp { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.75rem; }
-  .disp .full { grid-column: 1 / -1; }
   .approver { max-width: 320px; }
 {% endblock %}
 
 {% block content %}
-  <ul class="steps">
-    <li>1 · Requirements</li><li>›</li><li class="now">2 · Results</li><li>›</li><li>3 · Report</li>
-  </ul>
-
   <h1>Clause-by-clause verdicts</h1>
   <p class="lede">
-    Deterministic code made each quantifiable verdict; confirm or override every
-    one, then sign. Uncertainty resolves to flag/insufficient — never to “compliant.”
+    {{ subtitle }} — deterministic code made each quantifiable verdict. Confirm or
+    override every one, then sign. Uncertainty resolves to flag/insufficient —
+    never to “compliant.”
   </p>
 
   {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
-  <form method="post" action="{% url 'report' sample_id %}">
+  <form method="post" action="{{ form_action }}">
     {% csrf_token %}
+    {% for k, v in carry.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+
     {% for r in rows %}
       <div class="panel clause">
         <div class="top">
@@ -67,7 +65,7 @@
 
     <div class="row-actions">
       <button class="btn" type="submit">Generate signed report &rarr;</button>
-      <a class="btn secondary" href="{% url 'requirements' sample_id %}">Back</a>
+      <a class="btn secondary" href="{{ back_url }}">{{ back_label }}</a>
     </div>
   </form>
 {% endblock %}

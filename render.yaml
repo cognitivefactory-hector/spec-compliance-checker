@@ -1,0 +1,25 @@
+# Render blueprint — deploy as a Dockerized web service.
+# Create the service from this file (Render dashboard → New → Blueprint), then
+# set ANTHROPIC_API_KEY as a secret in the dashboard (sync:false keeps it out of git).
+services:
+  - type: web
+    name: spec-compliance-checker
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_DEBUG
+        value: "false"
+      # Render serves at <name>.onrender.com; add your custom domain here too.
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com,compliance.hector-garza.com"
+      - key: DJANGO_CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com,https://compliance.hector-garza.com"
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-6
+      # Set this as a secret in the Render dashboard — never commit it.
+      - key: ANTHROPIC_API_KEY
+        sync: false

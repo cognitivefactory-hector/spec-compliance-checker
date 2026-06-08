@@ -27,14 +27,11 @@ from app.ingest.parse import ParsedDocument
 MAX_TOKENS = 8000
 
 
-def extract_requirements(
+def extract_requirements_result(
     parsed: ParsedDocument, *, client=None, model: str | None = None
-) -> list[Requirement]:
-    """Extract typed, cited requirements from a parsed spec via Claude.
-
-    ``client`` is injectable for testing; by default an ``anthropic.Anthropic``
-    is constructed and the model is read from settings.
-    """
+) -> ExtractionResult:
+    """The raw structured extraction from Claude (before mapping). Exposed so the
+    upload flow can carry it across the sign-off round-trip without re-calling."""
     if client is None or model is None:
         client, model = _resolve_client_and_model(client, model)
 
@@ -47,7 +44,19 @@ def extract_requirements(
         messages=[{"role": "user", "content": build_user_prompt(parsed.full_text)}],
         output_format=ExtractionResult,
     )
-    return to_requirements(response.parsed_output, parsed)
+    return response.parsed_output
+
+
+def extract_requirements(
+    parsed: ParsedDocument, *, client=None, model: str | None = None
+) -> list[Requirement]:
+    """Extract typed, cited requirements from a parsed spec via Claude.
+
+    ``client`` is injectable for testing; by default an ``anthropic.Anthropic``
+    is constructed and the model is read from settings.
+    """
+    result = extract_requirements_result(parsed, client=client, model=model)
+    return to_requirements(result, parsed)
 
 
 def _resolve_client_and_model(client, model):

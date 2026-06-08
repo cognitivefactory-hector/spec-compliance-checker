@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Report — {{ sample.spec_id }}{% endblock %}
+{% block title %}Signed report{% endblock %}
 
 {% block style %}
   .disp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
@@ -9,10 +9,6 @@
 {% endblock %}
 
 {% block content %}
-  <ul class="steps">
-    <li>1 · Requirements</li><li>›</li><li>2 · Results</li><li>›</li><li class="now">3 · Report</li>
-  </ul>
-
   <h1>Signed compliance report</h1>
   <p class="lede">
     Signed by <strong>{{ signed.approver }}</strong> at {{ signed.signed_at|date:"Y-m-d H:i T" }}.
@@ -41,13 +37,12 @@
   </ul>
 
   <div class="row-actions">
-    <form method="post" action="{% url 'report' sample_id %}">
+    <form method="post" action="{{ report_action }}">
       {% csrf_token %}
       {% for k, v in carry.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
-      <input type="hidden" name="export" value="md">
-      <button class="btn" type="submit">Download Markdown</button>
+      <button class="btn" type="submit" name="export" value="md">Download Markdown</button>
+      <button class="btn" type="submit" name="export" value="pdf">Download PDF</button>
     </form>
-    <a class="btn secondary" href="{% url 'results' sample_id %}">Back to results</a>
   </div>
 
   <h2>Markdown preview</h2>

@@ -6,6 +6,8 @@
   .card .case { color: var(--muted); font-size: 0.9rem; margin: 0.2rem 0 0; }
   .upload { margin-top: 2rem; }
   .upload .note { color: var(--muted); font-size: 0.88rem; }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin: 0 0 0.75rem; }
+  .upload-grid label { display: block; margin-bottom: 0.25rem; }
 {% endblock %}
 
 {% block content %}
@@ -15,6 +17,8 @@
     produces an audit-ready report — biased toward <em>catching the miss</em>.
     Pick a synthetic sample to walk the flow.
   </p>
+
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
 
   <h2>Sample documents</h2>
   <div class="cards">
@@ -32,11 +36,26 @@
   <div class="upload">
     <h2>Or upload your own</h2>
     <div class="panel">
-      <p class="note">
-        Live extraction of an uploaded spec + record (typed/text PDF) lands in the next
-        milestone. For now, use a sample above — it runs the same pipeline end to end.
-      </p>
-      <button class="btn" disabled>Upload spec &amp; record (coming soon)</button>
+      {% if upload_enabled %}
+        <form method="post" action="{% url 'analyze' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          <p class="upload-grid">
+            <span><label for="spec_file">Process spec (PDF or text)</label>
+              <input type="file" name="spec_file" id="spec_file" accept=".pdf,.txt,.md,text/plain,application/pdf" required></span>
+            <span><label for="record_file">Production record (PDF or text)</label>
+              <input type="file" name="record_file" id="record_file" accept=".pdf,.txt,.md,text/plain,application/pdf" required></span>
+          </p>
+          <button class="btn" type="submit">Extract &amp; check &rarr;</button>
+          <p class="note">Runs the live model on your documents (typed/text PDFs). Synthetic documents only — don’t upload real records.</p>
+        </form>
+      {% else %}
+        <p class="note">
+          Live extraction of an uploaded spec + record is enabled when
+          <code>ANTHROPIC_API_KEY</code> is configured. For now, use a sample above —
+          it runs the same pipeline end to end.
+        </p>
+        <button class="btn" disabled>Upload spec &amp; record</button>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
