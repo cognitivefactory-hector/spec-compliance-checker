@@ -75,3 +75,11 @@ Audit prep drops from hours to minutes; every requirement is checked **consisten
 - **Type coercion lives in code, not the model:** the model returns record values as text; `to_observations` parses numbers (`float`) and ISO-8601 timestamps (`datetime`). An unparseable value becomes `None` → insufficient, never a bad comparison.
 - **`check_documents(spec, record)` is the end-to-end seam** for M7: ingest both → extract requirements → extract observations → `build_report`. The client is injectable, so the whole pipeline is tested with a fake client + the M4 corpus; the live run stays out of CI.
 - **`CheckReport` is the auditable artifact:** a list of `ClauseResult`s (requirement, verdict, `needs_review` + reason) plus status counts — the clause-by-clause structure M6 renders.
+
+### M6 — report, sign-off, audit trail (recorded as built)
+- **Nothing is dispositioned without sign-off:** `sign_off(report, decisions, *, approver, signed_at)` requires a named approver and exactly one `Decision` per clause. **Confirm** keeps the verdict's status; **override** sets the engineer's chosen final status and **requires a justification note** (raises otherwise). This encodes "a human signs every disposition."
+- **The audit trail is the traceability chain:** every clause (confirm *and* override) becomes an immutable `AuditEvent` — `requirement_id`, action, original→final status, note, approver, timestamp. It shows an auditor that each clause was adjudicated by a named person, with overrides justified. Overrides flagged.
+- **`signed_at` is injected, not `now()`:** the sign-off layer is pure and deterministic (testable, reproducible) — the view passes the timestamp.
+- **Export format:** **Markdown** in M6 (auditor-recognizable, pure-string, fully testable). **PDF deferred to M8** polish — avoids promoting `reportlab` to a runtime dep before it's needed.
+- **No persistence yet:** `SignedReport` is a data structure; persisting it (SQLite) stays optional (SPEC §9) and is an M7/M8 concern.
+- **Record evidence renders as "—" when an observation has no record citation** (e.g. the value-only M4 corpus). In the live `check_documents` flow, record-side extraction supplies the citation and it renders. The renderer never fabricates evidence.
