@@ -39,3 +39,35 @@ def build_user_prompt(spec_text: str) -> str:
         "Quote source_text verbatim.\n\n"
         f"{spec_text}"
     )
+
+
+RECORD_SYSTEM_PROMPT = """\
+You read a production record (a traveler) and find the recorded value for each
+requirement you are given. You do NOT judge compliance — deterministic code
+makes every pass/fail decision. Your only job is to locate evidence.
+
+Rules:
+- For each requirement (identified by its id), find the value recorded in the
+  production record and return it as text in `value`.
+- `record_quote` MUST be an exact, verbatim substring of the record, so it can
+  be located and cited. Do not paraphrase.
+- For temporal requirements, return `start_time` (the from-operation) and
+  `end_time` (the to-operation) as ISO-8601 timestamps.
+- For conditional requirements, return `condition_value` (the value that
+  decides whether the rule applies) and the consequent's value in
+  `consequent_value` / `consequent_units` with a `consequent_quote`.
+- If the record does not state a value, leave it null. NEVER guess or infer a
+  value that isn't recorded — a missing value must stay null.
+"""
+
+
+def build_record_user_prompt(record_text: str, requirements) -> str:
+    lines = [
+        f"- {req.id} [{type(req).__name__}] {req.description}"
+        for req in requirements
+    ]
+    return (
+        "Find the recorded value in this production record for each requirement "
+        "below. Quote record_quote verbatim; leave missing values null.\n\n"
+        "Requirements:\n" + "\n".join(lines) + "\n\nProduction record:\n" + record_text
+    )
