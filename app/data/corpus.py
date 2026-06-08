@@ -27,6 +27,7 @@ from app.check.types import (
     VerdictStatus,
 )
 from app.extract.extract import to_requirements
+from app.extract.observations import ExtractedObservation, RecordExtraction
 from app.extract.schemas import ExtractedConsequent, ExtractedRequirement, ExtractionResult
 from app.ingest.parse import ParsedDocument, parse_text
 
@@ -91,7 +92,8 @@ SPEC_EXTRACTION = ExtractionResult(
                 "If the substrate material is Ti-6Al-4V, "
                 "the coating thickness shall be at least 1.00 mm."
             ),
-            confidence=0.9,
+            # conditional clauses are the hardest to extract -> review gate flags it
+            confidence=0.62,
             condition_trigger_values=["Ti-6Al-4V"],
             consequent=ExtractedConsequent(
                 kind="numeric",
@@ -125,12 +127,54 @@ class Sample:
     record_text: str
     extraction: ExtractionResult
     checks: tuple[Check, ...]
+    record_extraction: RecordExtraction  # canned record evidence for the offline demo
 
     def parsed_spec(self) -> ParsedDocument:
         return parse_text(self.spec_text)
 
     def requirements(self) -> list[Requirement]:
         return to_requirements(self.extraction, self.parsed_spec())
+
+
+def _record_extraction(
+    *, thickness_value: str | None, thickness_quote: str, coat_quote: str, coat_end_iso: str
+) -> RecordExtraction:
+    """Canned record evidence, aligned to SPEC_EXTRACTION's requirement order
+    (R1..R5). Quotes are verbatim substrings of the traveler so they locate."""
+    material_quote = "Substrate material: Ti-6Al-4V"
+    units = "mm" if thickness_value else None
+    return RecordExtraction(
+        observations=[
+            ExtractedObservation(
+                requirement_id="R1",
+                record_quote=thickness_quote,
+                value=thickness_value,
+                units=units,
+            ),
+            ExtractedObservation(
+                requirement_id="R2",
+                record_quote=coat_quote,
+                start_time="2026-03-01T09:00",
+                end_time=coat_end_iso,
+            ),
+            ExtractedObservation(
+                requirement_id="R3", record_quote=material_quote, value="Ti-6Al-4V"
+            ),
+            ExtractedObservation(
+                requirement_id="R4",
+                record_quote="Operator certification number: CERT-7782",
+                value="CERT-7782",
+            ),
+            ExtractedObservation(
+                requirement_id="R5",
+                record_quote=material_quote,
+                condition_value="Ti-6Al-4V",
+                consequent_value=thickness_value,
+                consequent_units=units,
+                consequent_quote=thickness_quote if thickness_value else None,
+            ),
+        ]
+    )
 
 
 C = VerdictStatus.COMPLIANT
@@ -191,6 +235,12 @@ SAMPLES: dict[str, Sample] = {
             temporal_expected=C,
             conditional_expected=C,
         ),
+        record_extraction=_record_extraction(
+            thickness_value="1.20",
+            thickness_quote="Coating thickness measured: 1.20 mm",
+            coat_quote="Coating operation started: 2026-03-01 12:00",
+            coat_end_iso="2026-03-01T12:00",
+        ),
     ),
     # Obvious: thickness 1.90 mm is over the 1.50 mm maximum.
     "coating-obvious": Sample(
@@ -210,6 +260,12 @@ SAMPLES: dict[str, Sample] = {
             thickness_expected=N,  # over max
             temporal_expected=C,
             conditional_expected=C,  # 1.90 >= 1.00, so the Ti rule still holds
+        ),
+        record_extraction=_record_extraction(
+            thickness_value="1.90",
+            thickness_quote="Coating thickness measured: 1.90 mm",
+            coat_quote="Coating operation started: 2026-03-01 12:00",
+            coat_end_iso="2026-03-01T12:00",
         ),
     ),
     # Subtle: coating began 4 h 30 m after prep — 30 minutes over the 4 h limit.
@@ -231,6 +287,12 @@ SAMPLES: dict[str, Sample] = {
             temporal_expected=N,  # the subtle catch
             conditional_expected=C,
         ),
+        record_extraction=_record_extraction(
+            thickness_value="1.10",
+            thickness_quote="Coating thickness measured: 1.10 mm",
+            coat_quote="Coating operation started: 2026-03-01 13:30",
+            coat_end_iso="2026-03-01T13:30",
+        ),
     ),
     # Missing: the record never states a thickness — must be insufficient, not compliant.
     "coating-missing": Sample(
@@ -251,9 +313,57 @@ SAMPLES: dict[str, Sample] = {
             temporal_expected=C,
             conditional_expected=I,  # Ti triggers the rule, but thickness is absent
         ),
+        record_extraction=_record_extraction(
+            thickness_value=None,  # no thickness recorded
+            thickness_quote="",
+            coat_quote="Coating operation started: 2026-03-01 12:00",
+            coat_end_iso="2026-03-01T12:00",
+        ),
     ),
 }
 
 
 def get_sample(sample_id: str) -> Sample:
     return SAMPLES[sample_id]
+
+
+# --- offline pipeline run (no API) -------------------------------------------
+
+
+class _OfflineMessages:
+    """Returns the sample's canned extraction in place of a Claude call."""
+
+    def __init__(self, spec: ExtractionResult, record: RecordExtraction):
+        self._spec = spec
+        self._record = record
+
+    def parse(self, *, output_format, **_kwargs):
+        payload = self._spec if output_format is ExtractionResult else self._record
+
+        @dataclass(frozen=True)
+        class _Resp:
+            parsed_output: object
+
+        return _Resp(payload)
+
+
+class _OfflineClient:
+    def __init__(self, spec: ExtractionResult, record: RecordExtraction):
+        self.messages = _OfflineMessages(spec, record)
+
+
+def run_sample(sample_id: str, *, min_confidence: float | None = None):
+    """Run the real check pipeline for a sample with canned LLM output — a
+    reproducible, zero-cost demo path that still exercises ingest -> extract ->
+    review -> check end to end."""
+    from app.pipeline import DEFAULT_MIN_CONFIDENCE, check_documents
+
+    sample = get_sample(sample_id)
+    client = _OfflineClient(sample.extraction, sample.record_extraction)
+    return check_documents(
+        sample.spec_text,
+        sample.record_text,
+        client=client,
+        model="offline",
+        min_confidence=DEFAULT_MIN_CONFIDENCE if min_confidence is None else min_confidence,
+    )

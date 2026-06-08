@@ -1,46 +1,42 @@
 {% extends "base.html" %}
 
 {% block style %}
-    h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.5rem; letter-spacing: -0.02em; }
-    .lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 2.5rem; }
-    .flow { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0 0 2.5rem; padding: 0; list-style: none; }
-    .flow li {
-      background: #fff; border: 1px solid var(--line); border-radius: 999px;
-      padding: 0.35rem 0.9rem; font-size: 0.9rem; color: var(--muted);
-    }
-    .principle {
-      background: #fff; border: 1px solid var(--line); border-left: 3px solid var(--accent);
-      border-radius: 6px; padding: 1rem 1.25rem; margin: 0 0 1rem;
-    }
-    .principle strong { color: var(--ink); }
-    .principle p { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.95rem; }
+  .cards { display: grid; gap: 0.85rem; }
+  .card { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .card .case { color: var(--muted); font-size: 0.9rem; margin: 0.2rem 0 0; }
+  .upload { margin-top: 2rem; }
+  .upload .note { color: var(--muted); font-size: 0.88rem; }
 {% endblock %}
 
 {% block content %}
-  <h1>Spec Compliance Checker</h1>
+  <h1>Check a production record against its spec</h1>
   <p class="lede">
-    Upload a process spec and a production record; it extracts each requirement
-    (cited), checks the record against it, and produces an audit-ready report —
-    deliberately biased toward <em>catching the miss</em>.
+    The tool extracts each requirement (cited), checks the record against it, and
+    produces an audit-ready report — biased toward <em>catching the miss</em>.
+    Pick a synthetic sample to walk the flow.
   </p>
 
-  <ul class="flow">
-    <li>Upload</li>
-    <li>→ Requirements</li>
-    <li>→ Results</li>
-    <li>→ Report</li>
-  </ul>
-
-  <div class="principle">
-    <strong>The LLM extracts and cites; deterministic code decides; a human signs.</strong>
-    <p>A model never does arithmetic on safety-relevant numbers.</p>
-  </div>
-  <div class="principle">
-    <strong>Three-state verdict: Compliant / Non-compliant / Insufficient evidence.</strong>
-    <p>A missing field is never &ldquo;compliant.&rdquo;</p>
+  <h2>Sample documents</h2>
+  <div class="cards">
+    {% for card in cards %}
+      <div class="panel card">
+        <div>
+          <h3>{{ card.spec_id }} &rarr; {{ card.record_id }} <span class="pill flag">{{ card.label }}</span></h3>
+          <p class="case">{{ card.blurb }}</p>
+        </div>
+        <a class="btn" href="{% url 'requirements' card.id %}">Review &rarr;</a>
+      </div>
+    {% endfor %}
   </div>
 
-  <p style="color: var(--muted); font-size: 0.9rem;">
-    Scaffold (milestone&nbsp;M0). The interactive flow lands in milestones M5–M7.
-  </p>
+  <div class="upload">
+    <h2>Or upload your own</h2>
+    <div class="panel">
+      <p class="note">
+        Live extraction of an uploaded spec + record (typed/text PDF) lands in the next
+        milestone. For now, use a sample above — it runs the same pipeline end to end.
+      </p>
+      <button class="btn" disabled>Upload spec &amp; record (coming soon)</button>
+    </div>
+  </div>
 {% endblock %}

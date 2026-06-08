@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Report — {{ sample.spec_id }}{% endblock %}
+
+{% block style %}
+  .disp-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .disp-row .note { color: var(--muted); font-size: 0.85rem; margin: 0.2rem 0 0; }
+  .arrow { color: var(--muted); }
+{% endblock %}
+
+{% block content %}
+  <ul class="steps">
+    <li>1 · Requirements</li><li>›</li><li>2 · Results</li><li>›</li><li class="now">3 · Report</li>
+  </ul>
+
+  <h1>Signed compliance report</h1>
+  <p class="lede">
+    Signed by <strong>{{ signed.approver }}</strong> at {{ signed.signed_at|date:"Y-m-d H:i T" }}.
+    {{ signed.override_count }} override(s).
+  </p>
+
+  {% for r in rows %}
+    <div class="panel">
+      <div class="disp-row">
+        <h3>{{ r.id }} — {{ r.description }}</h3>
+        <span>
+          <span class="pill {{ r.verdict.css }}">{{ r.verdict.label }}</span>
+          <span class="arrow">→</span>
+          <span class="pill {{ r.disposition.css }}">{{ r.disposition.label }}</span>
+        </span>
+      </div>
+      {% if r.is_override %}<p class="note">Override justification: {{ r.note }}</p>{% endif %}
+    </div>
+  {% endfor %}
+
+  <h2>Audit trail</h2>
+  <ul class="trail">
+    {% for ev in trail %}
+      <li>{{ ev.timestamp|date:"Y-m-d H:i T" }} · {{ ev.approver }} · {{ ev.requirement_id }}: {{ ev.action }}</li>
+    {% endfor %}
+  </ul>
+
+  <div class="row-actions">
+    <form method="post" action="{% url 'report' sample_id %}">
+      {% csrf_token %}
+      {% for k, v in carry.items %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+      <input type="hidden" name="export" value="md">
+      <button class="btn" type="submit">Download Markdown</button>
+    </form>
+    <a class="btn secondary" href="{% url 'results' sample_id %}">Back to results</a>
+  </div>
+
+  <h2>Markdown preview</h2>
+  <pre>{{ markdown }}</pre>
+{% endblock %}

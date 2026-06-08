@@ -4,16 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Spec Compliance Checker{% endblock %}</title>
+  <script src="https://unpkg.com/htmx.org@2.0.3" defer></script>
   <style>
     :root {
       --ink: #14181f;
       --muted: #5b6675;
       --line: #e3e7ec;
       --bg: #f7f8fa;
+      --panel: #ffffff;
       --accent: #1f5fbf;
-      --warn-bg: #fff6e6;
-      --warn-line: #e6c982;
-      --warn-ink: #7a5800;
+      --ok-bg: #e9f6ec; --ok-ink: #1c6b34; --ok-line: #b4ddc0;
+      --bad-bg: #fdecec; --bad-ink: #9b1c1c; --bad-line: #efb4b4;
+      --warn-bg: #fff6e6; --warn-ink: #7a5800; --warn-line: #e6c982;
     }
     * { box-sizing: border-box; }
     body {
@@ -25,27 +27,60 @@
       flex-direction: column;
       min-height: 100vh;
     }
-    main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem; }
+    header.site {
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      padding: 0.9rem 1.5rem;
+    }
+    header.site a.brand { color: var(--ink); text-decoration: none; font-weight: 650; letter-spacing: -0.01em; }
+    header.site .tag { color: var(--muted); font-size: 0.85rem; margin-left: 0.5rem; }
+    main { flex: 1; width: 100%; max-width: 880px; margin: 0 auto; padding: 2.5rem 1.5rem; }
     footer {
-      border-top: 1px solid var(--line);
-      background: #fff;
-      color: var(--muted);
-      font-size: 0.85rem;
-      padding: 1.25rem 1.5rem;
-      text-align: center;
+      border-top: 1px solid var(--line); background: var(--panel); color: var(--muted);
+      font-size: 0.85rem; padding: 1.25rem 1.5rem; text-align: center;
     }
     a { color: var(--accent); }
-    .disclaimer { color: var(--warn-ink); }
+    h1 { font-size: 1.9rem; line-height: 1.2; margin: 0 0 0.4rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.15rem; margin: 2rem 0 0.75rem; }
+    .lede { color: var(--muted); margin: 0 0 1.75rem; }
+    .steps { display: flex; gap: 0.4rem; flex-wrap: wrap; list-style: none; padding: 0; margin: 0 0 2rem; font-size: 0.85rem; }
+    .steps li { color: var(--muted); }
+    .steps li.now { color: var(--ink); font-weight: 650; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem 1.25rem; margin: 0 0 1rem; }
+    .panel h3 { margin: 0 0 0.35rem; font-size: 1rem; }
+    .meta { color: var(--muted); font-size: 0.85rem; }
+    .quote { font-style: italic; color: var(--muted); }
+    .loc { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.82rem; }
+    .pill { display: inline-block; padding: 0.12rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 650; border: 1px solid; }
+    .pill.ok { background: var(--ok-bg); color: var(--ok-ink); border-color: var(--ok-line); }
+    .pill.bad { background: var(--bad-bg); color: var(--bad-ink); border-color: var(--bad-line); }
+    .pill.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+    .pill.flag { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+    .btn { display: inline-block; background: var(--accent); color: #fff; border: 0; border-radius: 7px;
+      padding: 0.55rem 1.1rem; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; }
+    .btn.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .row-actions { display: flex; gap: 0.75rem; align-items: center; margin-top: 1.25rem; flex-wrap: wrap; }
+    label { font-size: 0.85rem; color: var(--muted); }
+    select, input[type=text], textarea {
+      font: inherit; padding: 0.4rem 0.5rem; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); width: 100%;
+    }
+    .error { background: var(--bad-bg); color: var(--bad-ink); border: 1px solid var(--bad-line); border-radius: 8px; padding: 0.6rem 0.9rem; margin: 0 0 1rem; }
+    pre { background: #0f1320; color: #e6e9f0; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.82rem; }
+    .trail { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; }
+    .trail li { padding: 0.3rem 0; border-bottom: 1px dashed var(--line); color: var(--muted); }
     {% block style %}{% endblock %}
   </style>
 </head>
-<body>
+<body hx-boost="true">
+  <header class="site">
+    <a class="brand" href="{% url 'index' %}">Spec Compliance Checker</a>
+    <span class="tag">extract · check · sign</span>
+  </header>
   <main>{% block content %}{% endblock %}</main>
   <footer>
-    <p class="disclaimer">
-      Illustrative tool on synthetic documents — not a quality system of record.
-      A qualified engineer signs every disposition.
-    </p>
+    Illustrative tool on synthetic documents — not a quality system of record.
+    A qualified engineer signs every disposition.
   </footer>
 </body>
 </html>

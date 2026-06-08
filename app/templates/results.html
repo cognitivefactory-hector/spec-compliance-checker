@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Results — {{ sample.spec_id }}{% endblock %}
+
+{% block style %}
+  .clause .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .evidence { margin: 0.5rem 0 0; padding-left: 1rem; }
+  .reason { color: var(--muted); font-size: 0.88rem; margin: 0.35rem 0 0; }
+  .disp { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.75rem; }
+  .disp .full { grid-column: 1 / -1; }
+  .approver { max-width: 320px; }
+{% endblock %}
+
+{% block content %}
+  <ul class="steps">
+    <li>1 · Requirements</li><li>›</li><li class="now">2 · Results</li><li>›</li><li>3 · Report</li>
+  </ul>
+
+  <h1>Clause-by-clause verdicts</h1>
+  <p class="lede">
+    Deterministic code made each quantifiable verdict; confirm or override every
+    one, then sign. Uncertainty resolves to flag/insufficient — never to “compliant.”
+  </p>
+
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+
+  <form method="post" action="{% url 'report' sample_id %}">
+    {% csrf_token %}
+    {% for r in rows %}
+      <div class="panel clause">
+        <div class="top">
+          <h3>{{ r.id }} — {{ r.description }}</h3>
+          <span class="pill {{ r.status.css }}">{{ r.status.label }}</span>
+        </div>
+        <p class="quote">spec: “{{ r.spec_text }}” <span class="loc">({{ r.spec_location }})</span></p>
+        {% if r.evidence %}
+          <ul class="evidence">
+            {% for e in r.evidence %}<li class="quote">record: “{{ e.text }}” <span class="loc">({{ e.location }})</span></li>{% endfor %}
+          </ul>
+        {% else %}
+          <p class="loc">record evidence: —</p>
+        {% endif %}
+        <p class="reason">{{ r.reason }}{% if r.needs_review %} · <span class="pill flag">⚠ flagged for review</span>{% endif %}</p>
+
+        <div class="disp">
+          <div>
+            <label for="disp_{{ r.id }}">Disposition</label>
+            <select name="disp_{{ r.id }}" id="disp_{{ r.id }}">
+              <option value="confirm" selected>Confirm: {{ r.status.label }}</option>
+              {% for value, label in override_choices %}
+                <option value="{{ value }}">Override → {{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label for="note_{{ r.id }}">Justification (required to override)</label>
+            <input type="text" name="note_{{ r.id }}" id="note_{{ r.id }}" placeholder="Why you overrode this verdict">
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="panel">
+      <label for="approver">Approver (signs the report)</label>
+      <input class="approver" type="text" name="approver" id="approver" placeholder="Your name" required>
+    </div>
+
+    <div class="row-actions">
+      <button class="btn" type="submit">Generate signed report &rarr;</button>
+      <a class="btn secondary" href="{% url 'requirements' sample_id %}">Back</a>
+    </div>
+  </form>
+{% endblock %}
