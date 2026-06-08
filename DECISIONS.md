@@ -83,3 +83,11 @@ Audit prep drops from hours to minutes; every requirement is checked **consisten
 - **Export format:** **Markdown** in M6 (auditor-recognizable, pure-string, fully testable). **PDF deferred to M8** polish — avoids promoting `reportlab` to a runtime dep before it's needed.
 - **No persistence yet:** `SignedReport` is a data structure; persisting it (SQLite) stays optional (SPEC §9) and is an M7/M8 concern.
 - **Record evidence renders as "—" when an observation has no record citation** (e.g. the value-only M4 corpus). In the live `check_documents` flow, record-side extraction supplies the citation and it renders. The renderer never fabricates evidence.
+
+### M7 — UI: Upload / Requirements / Results / Report (recorded as built)
+- **The demo runs the real pipeline offline.** Each corpus `Sample` gained a canned `RecordExtraction`; `run_sample()` feeds an `_OfflineClient` to the *actual* `check_documents`, so the demo exercises ingest → extract → review → check → cited report with **no API key and zero cost**, reproducibly. The corpus is the LLM stand-in.
+- **No fragile session state:** flow is driven by `sample_id` in the URL and re-run per screen (offline runs are instant); confirm/override decisions ride in the POST form. Avoids serializing dataclasses into the session.
+- **The review gate is made visible:** the conditional clause's extraction confidence is set to **0.62** (below the 0.70 threshold) — realistic, since "if X then Y" clauses are the hardest to extract — so the Requirements screen actually shows a flagged-for-review item.
+- **Upload deferred to M8** (chosen): the upload control is present but shows a "live extraction — coming next" notice. The sample flow is the tested path and needs no key.
+- **Frontend:** Django templates extending a small design system in `base.html` (cohesive palette, status pills ok/bad/warn), **HTMX** loaded with `hx-boost` for snappy navigation. Per `PLAN.md` testing strategy, the UI is covered by flow smoke tests (Django test client), not exhaustive coverage — the recorded walkthrough is the real UI demo.
+- **Disposition UX:** a single per-clause select ("Confirm: <verdict>" or "Override → <status>") plus a justification field collapses action+status; the view parses it into `Decision`s, and `sign_off` enforces the justification rule. Export re-submits the carried form with `export=md`.

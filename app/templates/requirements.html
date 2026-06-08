@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Requirements — {{ sample.spec_id }}{% endblock %}
+
+{% block style %}
+  .req .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .req .kind { color: var(--muted); font-size: 0.8rem; }
+  .conf { font-variant-numeric: tabular-nums; }
+{% endblock %}
+
+{% block content %}
+  <ul class="steps">
+    <li class="now">1 · Requirements</li><li>›</li><li>2 · Results</li><li>›</li><li>3 · Report</li>
+  </ul>
+
+  <h1>Review extracted requirements</h1>
+  <p class="lede">
+    {{ sample.spec_id }} &rarr; {{ sample.record_id }}. The model extracted and
+    <strong>cited</strong> each requirement; review the list before checking.
+    {% if flagged %}<strong>{{ flagged }}</strong> flagged for review (low confidence).{% else %}None flagged for review.{% endif %}
+  </p>
+
+  {% for r in rows %}
+    <div class="panel req">
+      <div class="top">
+        <h3>{{ r.id }} — {{ r.description }}</h3>
+        {% if r.needs_review %}<span class="pill flag">⚠ review: {{ r.reason }}</span>{% endif %}
+      </div>
+      <p class="kind">{{ r.kind }} · confidence <span class="conf">{{ r.confidence|floatformat:2 }}</span></p>
+      <p class="quote">“{{ r.source_text }}”</p>
+      <p class="loc">spec {{ r.location }}</p>
+    </div>
+  {% endfor %}
+
+  <div class="row-actions">
+    <a class="btn" href="{% url 'results' sample_id %}">Run the check &rarr;</a>
+    <a class="btn secondary" href="{% url 'index' %}">Back</a>
+  </div>
+{% endblock %}

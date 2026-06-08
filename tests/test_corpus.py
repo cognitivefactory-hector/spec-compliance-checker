@@ -65,3 +65,17 @@ def test_missing_field_is_insufficient_never_compliant():
     r1_status = evaluate(reqs[0], sample.checks[0].observation).status
     assert r1_status is VerdictStatus.INSUFFICIENT_EVIDENCE
     assert r1_status is not VerdictStatus.COMPLIANT
+
+
+@pytest.mark.parametrize("sample_id", sorted(EXPECTED_IDS))
+def test_run_sample_reproduces_expected_verdicts_through_full_pipeline(sample_id):
+    """run_sample drives the real check_documents pipeline offline (canned LLM
+    output) — same verdicts as the hand-authored checks, with record citations."""
+    from app.data.corpus import run_sample
+
+    report = run_sample(sample_id)
+    sample = get_sample(sample_id)
+    assert [r.status for r in report.results] == [c.expected for c in sample.checks]
+    # the material clause (R3) is recorded in every traveler, so its evidence cites.
+    r3 = report.results[2]
+    assert r3.record_citations and r3.record_citations[0].source_location is not None
